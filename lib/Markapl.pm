@@ -5,7 +5,7 @@ use Devel::Declare ();
 use Sub::Install qw(install_sub);
 
 use 5.008;
-our $VERSION = "0.02";
+our $VERSION = "0.03";
 
 use Markapl::TagHandlers;
 
@@ -66,6 +66,7 @@ sub _get_tag_list {
         start_form end_form startform endform start_multipart_form
         end_multipart_form isindex tmpfilename uploadinfo url_encoded
         multipart form canvas
+        row cell
     )
 }
 
@@ -103,7 +104,7 @@ Markapl - Markup as Perl
 
 =head1 VERSION
 
-This document describes Markapl version 0.01
+This document describes Markapl version 0.03
 
 =head1 SYNOPSIS
 

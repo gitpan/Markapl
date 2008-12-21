@@ -21,5 +21,6 @@ requires:
   Devel::Caller: 0
   Devel::Declare: 0
   PadWalker: 0
+  Sub::Install: 0
   perl: 5.8.0
-version: 0.03
+version: 0.04

@@ -40,7 +40,6 @@ template '/linklist.html' => sub {
                 ["Currency", "/currency"],
                 ["Foo", "/foo"],
             );
-
         }
     };
 };
@@ -53,6 +52,11 @@ template '/var-in-attribute.html' => sub {
         li { a(href => "$root/logout") { "Logout" }; };
     }
 };
+
+template '/perlbuiltin.html' => sub {
+    html_q { "Here is a short quotation here is a short quotation" };
+};
+
 
 1;
 

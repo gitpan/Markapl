@@ -5,8 +5,9 @@ use Devel::Declare ();
 use Sub::Install qw(install_sub);
 
 use 5.008;
-our $VERSION = "0.03";
+our $VERSION = "0.04";
 
+use Markapl::Tags;
 use Markapl::TagHandlers;
 
 use Markapl::Buffer;
@@ -51,25 +52,6 @@ sub render {
     return Markapl->end_buffer_frame->data;
 }
 
-sub _get_tag_list {
-    return qw(
-        h1 h2 h3 h4 h5 h6 p br hr ol ul li dl dt dd menu code var strong em tt
-        u i b blockquote pre img a address cite samp dfn html head body
-        link nextid title meta kbd start_html end_html input select option
-        comment charset escapehtml div table caption th sup sub
-        strike applet param nobr embed basefont style span layer ilayer font
-        frameset frame script small big area map abbr acronym bdo col colgroup
-        del fieldset iframe ins label legend noframes noscript object optgroup
-        q thead tbody tfoot blink fontsize center textfield textarea filefield
-        password_field hidden checkbox checkbox_group submit reset defaults
-        radio_group popup_menu button autoescape scrolling_list image_button
-        start_form end_form startform endform start_multipart_form
-        end_multipart_form isindex tmpfilename uploadinfo url_encoded
-        multipart form canvas
-        row cell
-    )
-}
-
 sub import {
     my ($class) = @_;
     my $caller = caller;
@@ -84,7 +66,7 @@ sub import {
     my $config = {};
     my $code_str = qq{package $caller;};
 
-    for my $tag (&_get_tag_list) {
+    for my $tag ( Markapl::Tags::html() ) {
         $code_str .= qq{sub $tag (&);};
         $config->{$tag} = {
             const => Markapl::TagHandlers::tag_parser_for($tag)
@@ -201,6 +183,35 @@ In here, it is:
 Or a shorthand for "id" attribute:
 
     h1("#title") { "Hi" };
+
+There are several HTML tags named the same as one of perl builtin or ops.
+Here's a list of them:
+
+    link map q s sub tr
+
+To generate markup with these tags, put C<"html_"> prefix in front of them,
+like:
+
+    html_q { "I a quotation, but this tag is not supported by IE." }
+
+It'll produce:
+
+    <q>I a quotation, but this tag is not supported by IE.</q>
+
+For tables, since there's absolutely no way to clobber "tr" in Perl
+AFAIK (not without using source filter,) tr and td are both renamed
+to row and cell, correspondly:
+
+    table {
+      row {
+        cell { "gugod" };
+        cell { "170cm" };
+        cell { "100kg" };
+      }
+    }
+
+It actually make more sense. This idea is borrowed from
+L<Template::Declare>
 
 =head1 INTERFACE 
 

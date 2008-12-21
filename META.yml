@@ -23,4 +23,4 @@ requires:
   PadWalker: 0
   Sub::Install: 0
   perl: 5.8.0
-version: 0.04
+version: 0.05

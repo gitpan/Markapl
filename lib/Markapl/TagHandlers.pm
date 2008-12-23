@@ -2,14 +2,12 @@ package Markapl::TagHandlers;
 
 use strict;
 use warnings;
-use Data::Dump qw(pp);
-use Devel::Caller qw(caller_vars caller_cv);
-use PadWalker qw(peek_my peek_our peek_sub closed_over);
 use Devel::Declare ();
 
-our $VERSION = 0.01;
+our $VERSION = 0.02;
 
 our ($Declarator, $Offset);
+
 sub skip_declarator {
     $Offset += Devel::Declare::toke_move_past_token($Offset);
 }
@@ -66,6 +64,16 @@ sub inject_if_block {
     }
 }
 
+sub inject_before_block {
+    my $inject = shift;
+    skipspace;
+    my $linestr = Devel::Declare::get_linestr;
+    if (substr($linestr, $Offset, 1) eq '{') {
+        substr($linestr, $Offset, 0) = $inject;
+        Devel::Declare::set_linestr($linestr);
+    }
+}
+
 my %alt = (
     'cell'      => 'td',
     'row'       => 'tr',
@@ -84,71 +92,65 @@ sub tag_parser_for {
 
     return sub {
         local ($Declarator, $Offset) = @_;
+
+        my $offset_before = $Offset;
         skip_declarator;
+
+        # This means that current declarator is in a hash key.
+        # Don't shadow sub in this case
+        return if $Offset == $offset_before;
+
         my $name = strip_name;
         my $proto = strip_proto;
-        inject_if_block(
-            make_proto_unwrap($proto)
-        );
 
-        if (defined $name) {
-            $name = join('::', Devel::Declare::get_curstash_name(), $name)
-                unless ($name =~ /::/);
-            shadow(sub (&) { no strict 'refs'; *{$name} = shift; });
-        } else {
-            shadow(
-                sub (&) {
-                    my $block = shift;
-                    my $attr = "";
-                    if (defined $proto) {
-                        my @attr;
-                        eval "\@attr = ( $proto )";
-                        if ($@) {
-                            my $vars = peek_sub(caller_cv(1));
-                            my $var_declare = "";
-                            for my $varname (keys %$vars) {
-                                $var_declare .= "my $varname = " . pp(${$vars->{$varname}}) . ";";
-                            }
-                            eval "{$var_declare \n\@attr = ($proto);\n}";
-                        }
+        if (defined($proto)) {
+            inject_before_block("$proto, sub");
+        }
+        else {
+            inject_before_block("sub");
+        }
 
-                        if (@attr == 1) {
-                                # Special case.
-                                # h1("#myid") { ... }
+        shadow(
+            sub {
+                my $block = pop;
+                my @attr = @_;
 
-                            my $css = $attr[0];
-                            while ($css =~ /([#\.])(\w+)/g) {
-                                if ($1 eq '#') {
-                                    $attr .= qq{ id="$2"};
-                                } else {
-                                    $attr .= qq{ class="$2"};
-                                }
-                            }
+                my $attr = "";
+
+                if (@attr == 1) {
+                    my $css = $attr[0];
+                    while ($css =~ /([\#\.])(\w+)/g) {
+                        if ($1 eq '#') {
+                            $attr .= qq{ id="$2"};
                         } else {
-                            my ($k, $v) = (shift @attr, shift @attr);
-                            while ($k && $v) {
-                                $attr .= " $k=\"$v\"";
-                                ($k, $v) = (shift @attr, shift @attr);
-                            }
+                            $attr .= qq{ class="$2"};
                         }
                     }
-
-                    my $buf = "<${tag}${attr}>";
-
-                    Markapl->new_buffer_frame;
-
-                    Markapl->buffer->append( $block->() );
-
-                    $buf .= Markapl->end_buffer_frame->data;
-
-                    $buf .= "</$tag>";
-
-                    Markapl->buffer->append( $buf );
-
-                    return;
+                } else {
+                    my ($k, $v) = (shift @attr, shift @attr);
+                    while ($k && $v) {
+                        $attr .= " $k=\"$v\"";
+                        ($k, $v) = (shift @attr, shift @attr);
+                    }
                 }
-            );
-        }
+
+                my $buf = "<${tag}${attr}>";
+
+                Markapl->new_buffer_frame;
+
+                Markapl->buffer->append( $block->() )
+                    if defined $block && ref($block) eq 'CODE';
+
+                $buf .= Markapl->end_buffer_frame->data;
+
+                $buf .= "</$tag>";
+
+                Markapl->buffer->append( $buf );
+
+                return;
+            }
+        );
+
     }
 }
 

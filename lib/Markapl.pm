@@ -7,8 +7,10 @@ use Markapl::Tags;
 use Markapl::TagHandlers;
 use Markapl::Buffer;
 
+use HTML::Entities;
+
 use 5.008;
-our $VERSION = "0.07";
+our $VERSION = "0.08";
 
 my @buffer_stack;
 
@@ -35,20 +37,28 @@ sub template {
     });
 }
 
-sub outs($) {
+sub outs_raw($) {
     my $str = shift;
     Markapl->buffer->append( $str );
-    return "";
+    return '';
+}
+
+sub outs($) {
+    my $str = shift;
+    outs_raw encode_entities($str, '<>&"');
 }
 
 sub render {
     my ($self, $template, @vars) = @_;
 
-    Markapl->new_buffer_frame;
     if (my $sub = $self->can($template)) {
+        Markapl->new_buffer_frame;
         $sub->($self, @vars);
+        return Markapl->end_buffer_frame->data;
+    } else {
+        require Carp;
+        Carp::croak( "no such template: $template in $self" );
     }
-    return Markapl->end_buffer_frame->data;
 }
 
 sub set {
@@ -75,7 +85,7 @@ sub import {
     my ($class) = @_;
     my $caller = caller;
 
-    for my $name (qw(render outs template get set)) {
+    for my $name (qw(render outs outs_raw template get set)) {
         install_sub({
             code => $name,
             into => $caller,
@@ -106,14 +116,14 @@ Markapl - Markup as Perl
 
 =head1 VERSION
 
-This document describes Markapl version 0.03
+This document describes Markapl version 0.08
 
 =head1 SYNOPSIS
 
     package MyView;
     use Markapl;
 
-    tempalte '/a/page.html' => sub {
+    template '/a/page.html' => sub {
         h1("#title") { "Hi" };
         p(".first") { "In the begining, lorem ipsum...." };
         p(style => "color: red;") { "But...." };
@@ -128,17 +138,18 @@ Here's a short guide how to use this module. You can skip this
 tutorial section if you're already using L<Template::Declare>, since
 it's exactly the same.
 
-First of all, you need a sole package for defining your tempaltes,
+First of all, you need a sole package for defining your templates,
 let's call it "MyView" in the example.  Then you C<use Markapl> (but
-not use base), then your view package will be installed many
-subroutines automatically:
+not use base), which installs many helper subroutines into your
+"MyView" package for declaring and rendering templates:
+
 
     package MyView;
     use Markapl;
 
 To define a template, use C<template> function like this:
 
-    tempalte '/page.html' => sub {
+    template '/page.html' => sub {
         h1("#title") { "Hi" };
         p(".first") { "In the begining, lorem ipsum...." };
         p(style => "color: red;") { "But...." };
@@ -172,9 +183,9 @@ id and class attribute:
 
     div("#example") { "Lorem ipsum" };
 
-That only works when the attribute list contain excatly one string inside.
+That only works when the attribute list contain exactly one string inside.
 
-A special function C<outs> need to be used to concatinate strings with
+A special function C<outs> need to be used to concatenate strings with
 inline elements:
 
     p {
@@ -185,7 +196,7 @@ inline elements:
 =head1 DESCRIPTION
 
 This is a new try to use L<Devel::Declare> to change the Perl5
-language. It learns pretty much everything from L<Tempalte::Declare>,
+language. It learns pretty much everything from L<Template::Declare>,
 and has similar interface. With only one difference: how element
 attributes are defined.
 
@@ -230,11 +241,11 @@ to row and cell, correspondly:
       }
     }
 
-It actually make more sense. This idea is borrowed from
+It actually makes more sense. This idea is borrowed from
 L<Template::Declare>
 
 Several helper methods are defined in L<Markapl::Helpers>. Read the
-document there too.
+documentation there too.
 
 =head1 INTERFACE 
 
@@ -256,11 +267,11 @@ Or
 
 If you happen to like this style.
 
-Doesn't support tempalte variable yet. Stay tuned.
+Doesn't support template variables yet. Stay tuned.
 
 =item outs($str);
 
-Should only be usedin side a template body. It appends C<$str> to
+Should only be used inside a template body. It appends C<$str> to
 current output buffer frame.
 
 =item set($name, $value)

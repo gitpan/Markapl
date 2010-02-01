@@ -29,15 +29,10 @@ sub cells {
     row { for (@cells) { cell { $_ } } }
 }
 
-{
-    no strict;
-    no warnings;
-
-    *THs = \&heads;
-    *ths = \&heads;
-    *TDs = \&cells;
-    *tds = \&cells;
-}
+*THs = \&heads;
+*ths = \&heads;
+*TDs = \&cells;
+*tds = \&cells;
 
 1;
 
@@ -47,8 +42,8 @@ Markapl::Helpers - Practical helper methods
 
 =head1 DESCRIPTION
 
-This moudle exports several useful functions that are mean to be used
-inside template.
+This module exports several useful functions that are meant to be used
+inside templates.
 
 =head1 FUNCTIONS
 
@@ -66,7 +61,7 @@ Take pairs of labels and urls, return a structure like this:
 
 =item cells($item1, $item2, ...)
 
-Wrap C<< <td></td> >> tag around for each item in the argument list.
+Wrap C<< <td></td> >> tag around each item in the argument list.
 Useful when showing tabular data. For example:
 
     table {

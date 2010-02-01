@@ -2,20 +2,26 @@ use strict;
 use warnings;
 use inc::Module::Install;
 
+name 'Markapl';
 all_from 'lib/Markapl.pm';
 
-build_requires  'Test::More'        => '0.42';
+build_requires
+    'HTML::Lint'        => 0,
+    'Test::HTML::Lint'  => '2.06',
+    'Test::More'        => '0.42';
 
 # The list of evil modules
 requires
-    'B::Hooks::EndOfScope' => 0,
+    'B::Hooks::EndOfScope' => 0.05,
     'Devel::Declare' => 0;
 
 # Safer ones
 requires
+    'HTML::Entities' => 0,
     'Exporter::Lite' => 0,
     'Sub::Install' => 0;
 
-WriteAll;
+author_tests 'xt';
 
+WriteAll;
 

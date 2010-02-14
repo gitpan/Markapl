@@ -26,8 +26,9 @@ requires:
   Devel::Declare: 0
   Exporter::Lite: 0
   HTML::Entities: 0
+  String::BufferStack: 1.15
   Sub::Install: 0
   perl: 5.8.0
 resources:
   license: http://opensource.org/licenses/mit-license.php
-version: 0.08
+version: 0.09
